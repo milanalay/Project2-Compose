@@ -1,0 +1,25 @@
+docker network create jenkins
+
+docker run --name dind -d \
+	--network jenkins --network-alias docker \
+	--privileged \
+	-u root \
+	-e DOCKER_TLS_CERTDIR=/certs \
+	-v docker-certs-ca:/certs/ca \
+	-v docker-certs-client:/certs/client \
+	-v jenkins-data:/var/jenkins_home \
+	docker:dind
+
+
+docker container run --name jenkins \
+	--detach --restart unless-stopped \
+	--network jenkins \
+	-u root \
+	--env DOCKER_HOST="tcp://docker:2376" \
+	--env DOCKER_CERT_PATH=/certs/client \
+	--env DOCKER_TLS_VERIFY=1 \
+	--volume docker-certs-client:/certs/client:ro \
+	--volume jenkins-data:/var/jenkins_home \
+	--publish 8080:8080 --publish 50000:50000 \
+	-v /usr/bin/docker:/usr/bin/docker \
+	jenkins/jenkins:lts-jdk11
